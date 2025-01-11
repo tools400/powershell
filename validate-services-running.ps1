@@ -1,12 +1,16 @@
 ﻿#===========================================================
-# Script zur Prüfung der WIndows Server 2016 Dienste.
-# Wenn diese Dienste nicht zur Verfügung stehen, wird
-# der PC nicht mehr gesichert.
-# Fehlerbehebung siehe:
+# Script for testing the services that are required
+# for backups by Windows Server 2016 Essentials.
+# If these services are not available, the PC will no
+# longer be backed up.
+# Fixing the issue:
 # - https://sbsland.me/2022/10/03/windows-10-update-1903-und-der-essentials-connector-fix/
 # - d:\_Installationsdaten\_Thomas PC\Win11\00. Backup Server\
 #===========================================================
 
+# ------------------------------------
+#  Message text for different locales.
+# ------------------------------------
 $msg_de = @'
 Ein oder mehrere für das automatische Backup erforderlichen Dienste wurden nicht gefunden!
 
@@ -26,6 +30,7 @@ https://sbsland.me/2022/10/03/windows-10-update-1903-und-der-essentials-connecto
 '@
 
 
+#  Helper class.
 class Service {
     [String]$name
     [bool]$isRunning
@@ -36,7 +41,7 @@ class Service {
     }
 }
 
-
+#  Services to check.
 $services =
 @(
   [Service]::new("WseClientMgmtSvc", $false),
@@ -46,6 +51,46 @@ $services =
   [Service]::new("ServiceProviderRegistry", $false)
 )
 
+# ------------------------------------
+#  Appends a new message to the log
+# ------------------------------------
+function Write-LogEntry {
+    param (
+        $Message
+    )
+
+    "$(Get-Date -format yyyy-MM-dd-HH-mm-ss): $Message" | Out-File -Append $LogFile
+} 
+
+# ------------------------------------
+#  Display error dialog.
+# ------------------------------------
+function displayErrorDialog {
+    $locale = Get-WinSystemLocale
+    if ($locale.name.StartsWith('de')) {
+        Add-Type -AssemblyName "System.Windows.Forms"
+        $rc = [System.Windows.Forms.MessageBox]::Show($msg_de,"Fehler!",'OK','Error')
+    }
+}
+
+# ------------------------------------
+#  Start of main script.
+# ------------------------------------
+
+$ScriptHomeDir=$PSScriptRoot
+if ($ScriptHomeDir -eq '') {
+    $ScriptHomeDir = 'c:\temp'
+}
+
+If(!(Test-Path $ScriptHomeDir))
+{
+    New-Item -ItemType Directory -Force -Path $ScriptHomeDir 1> $null
+}
+
+$LogFile = "$ScriptHomeDir\Validate Windows Services.log"
+Write-Host "$ScriptHomeDir\Validate Windows Services.log"
+Write-LogEntry('Validating Windows backup services ...')
+
 $countErrors = 0
 foreach ($service in $services) {
     $winService = Get-Service -name $service.name
@@ -54,10 +99,9 @@ foreach ($service in $services) {
     }
 }
 
-
-if ($countErrors -eq 0){
-    $locale = Get-WinSystemLocale
-    if ($locale.name.StartsWith('de')) {
-        [System.Windows.Forms.MessageBox]::Show($msg_de,"Fehler!",'OK','Error')
-    }
+if ($countErrors -gt 0){
+    displayErrorDialog
+    Write-LogEntry('An error occurred while checking Windows services.')
+} else {
+    Write-LogEntry('Windows Services successfully tested.')
 }
