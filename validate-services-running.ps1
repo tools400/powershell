@@ -88,7 +88,6 @@ If(!(Test-Path $ScriptHomeDir))
 }
 
 $LogFile = "$ScriptHomeDir\Validate Windows Services.log"
-Write-Host "$ScriptHomeDir\Validate Windows Services.log"
 Write-LogEntry('Validating Windows backup services ...')
 
 $countErrors = 0
@@ -96,6 +95,14 @@ foreach ($service in $services) {
     $winService = Get-Service -name $service.name
     if ($winService -eq $null) {
         $countErrors++
+        Write-LogEntry("Service: $($service.name) => ERROR, not found!")
+    } else {
+        if ($service.isRunning -and $winService.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
+            $countErrors++
+            Write-LogEntry("Service: $($service.name) => ERROR, not running!")
+        } else {
+            Write-LogEntry("Service: $($service.name) => OK")
+        }
     }
 }
 
