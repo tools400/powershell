@@ -10,3 +10,8 @@ Client Backup laufen.
 Zur Fehlerbehebung siehe:
 
 * [Fix: Windows 10 und 11 Update und de](https://sbsland.me/2022/10/03/windows-10-update-1903-und-der-essentials-connector-fix/)
+
+## map-drives.ps1
+
+Re-mapped nicht verbundene Netzwerklaufwerke. Dieses Script wird bevorzugt
+beim Starten eines Computers ausgeführt.
